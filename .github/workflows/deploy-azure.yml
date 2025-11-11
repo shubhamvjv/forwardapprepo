@@ -44,6 +44,7 @@ jobs:
         run: yarn next export
 
       - name: Archive for Deploy
+        # Creates app.tar.gz containing the necessary files
         run: |
           tar -czf app.tar.gz .next package.json yarn.lock next.config.js public
       
@@ -58,14 +59,13 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     env:
-      # Secrets are exposed as environment variables here for the 'az login' step
+      # Secrets are exposed as environment variables for the 'az login' step
       AZ_CLIENT_ID: ${{ secrets.AZ_CLIENT_ID }}
       AZ_CLIENT_SECRET: ${{ secrets.AZ_CLIENT_SECRET }}
       AZ_SUBSCRIPTION_ID: ${{ secrets.AZ_SUBSCRIPTION_ID }}
       AZ_TENANT_ID: ${{ secrets.AZ_TENANT_ID }}
     permissions:
       contents: read
-      # The 'id-token: write' permission is removed as it's not needed for secret-based login.
 
     steps:
       - name: Download Build Artifact
@@ -75,7 +75,7 @@ jobs:
           path: .
 
       - name: Unpack Artifact
-        # This makes the app.tar.gz file available, along with the unpacked contents.
+        # Unpacks contents into the current working directory
         run: tar -xzf app.tar.gz
 
       - name: Azure CLI Login
@@ -91,8 +91,8 @@ jobs:
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          # FIX: Specify the exact name of the archived file.
-          package: app.tar.gz 
+          # FIX: Deploy the current directory ('.') which now holds all the unpacked files.
+          package: . 
           slot-name: production 
 
       - name: Restart Web App (Finalize Deployment)
