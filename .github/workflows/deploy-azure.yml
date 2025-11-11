@@ -35,16 +35,15 @@ jobs:
         run: yarn install --frozen-lockfile
 
       - name: Build Next.js
+        # This build step generates the standalone server in ./.next/standalone
         run: yarn build
 
-      - name: Export (static) if applicable
-        if: false
-        run: yarn next export
-
-      - name: Archive for Deploy
-        # FIX HERE: Added node_modules to the list of archived files!
+      - name: Archive for Deploy (Standalone Mode)
+        # 1. Copy public assets into the standalone folder
         run: |
-          tar -czf app.tar.gz .next node_modules package.json yarn.lock next.config.js public
+          cp -r public ./.next/standalone
+          # 2. Archive the ENTIRE CONTENTS of the standalone folder.
+          tar -czf app.tar.gz -C ./.next/standalone .
       
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -72,6 +71,7 @@ jobs:
           path: .
 
       - name: Unpack Artifact
+        # Unpacks the standalone server.js and its dependencies to /home/site/wwwroot/
         run: tar -xzf app.tar.gz
 
       - name: Azure CLI Login
