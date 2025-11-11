@@ -58,13 +58,14 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     env:
+      # Secrets are exposed as environment variables here for the 'az login' step
       AZ_CLIENT_ID: ${{ secrets.AZ_CLIENT_ID }}
       AZ_CLIENT_SECRET: ${{ secrets.AZ_CLIENT_SECRET }}
       AZ_SUBSCRIPTION_ID: ${{ secrets.AZ_SUBSCRIPTION_ID }}
       AZ_TENANT_ID: ${{ secrets.AZ_TENANT_ID }}
     permissions:
       contents: read
-      id-token: write # CRITICAL for OIDC (Federated) authentication!
+      # The 'id-token: write' permission is removed as it's not needed for secret-based login.
 
     steps:
       - name: Download Build Artifact
@@ -74,26 +75,25 @@ jobs:
           path: .
 
       - name: Unpack Artifact
+        # This makes the app.tar.gz file available, along with the unpacked contents.
         run: tar -xzf app.tar.gz
 
-      # --- This is the corrected and recommended Azure Login step ---
       - name: Azure CLI Login
+        # Log in using the Service Principal secrets
         run: |
           az login --service-principal \
             --username "$AZ_CLIENT_ID" \
             --password "$AZ_CLIENT_SECRET" \
             --tenant "$AZ_TENANT_ID"
-            
           az account set --subscription "$AZ_SUBSCRIPTION_ID"
 
-          
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          package: artifact
-          slot-name: production # Assuming this is your main slot
+          # FIX: Specify the exact name of the archived file.
+          package: app.tar.gz 
+          slot-name: production 
 
       - name: Restart Web App (Finalize Deployment)
         run: az webapp restart --name "$AZURE_WEBAPP_NAME" --resource-group "$AZURE_RG"
-
