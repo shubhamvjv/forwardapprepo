@@ -31,10 +31,10 @@ jobs:
           node-version: 20.x
           cache: 'yarn'
 
-      - name: Install
+      - name: Install Dependencies
         run: yarn install --frozen-lockfile
 
-      - name: Build
+      - name: Build Next.js
         env:
           NODE_OPTIONS: --no-node-snapshot
         run: yarn build
@@ -43,10 +43,11 @@ jobs:
         if: false # set to true if you use "next export"
         run: yarn next export
 
-      - name: Archive for deploy
+      - name: Archive for Deploy
         run: |
           tar -czf app.tar.gz .next package.json yarn.lock next.config.js public
-      - name: Upload artifact
+      
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: next-build
@@ -58,18 +59,19 @@ jobs:
     environment: production
     permissions:
       contents: read
-      id-token: write
+      id-token: write # CRITICAL for OIDC (Federated) authentication!
 
     steps:
-      - name: Download artifact
+      - name: Download Build Artifact
         uses: actions/download-artifact@v4
         with:
           name: next-build
           path: .
 
-      - name: Unpack
+      - name: Unpack Artifact
         run: tar -xzf app.tar.gz
 
+      # --- This is the corrected and recommended Azure Login step ---
       - name: Azure Login
         uses: azure/login@v2
         with:
@@ -79,13 +81,13 @@ jobs:
            subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
            client-secret: ${{ secrets.AZURE_CLIENT_SECRET }} 
 
+          
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-         app-name: ${{ env.AZURE_WEBAPP_NAME }}
-         package: artifact
-         slot-name: production
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          package: artifact
+          slot-name: production # Assuming this is your main slot
 
-      - name: Restart Web App
+      - name: Restart Web App (Finalize Deployment)
         run: az webapp restart --name "$AZURE_WEBAPP_NAME" --resource-group "$AZURE_RG"
-
