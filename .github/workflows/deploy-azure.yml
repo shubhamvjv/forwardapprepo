@@ -72,14 +72,14 @@ jobs:
         run: tar -xzf app.tar.gz
 
       # --- This is the corrected and recommended Azure Login step ---
-      - name: Azure Login
-        uses: azure/login@v2
-        with:
-           auth-type: SERVICE_PRINCIPAL
-           client-id: ${{ secrets.AZURE_CLIENT_ID }}
-           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-           client-secret: ${{ secrets.AZURE_CLIENT_SECRET }} 
+      - name: Azure CLI Login
+        run: |
+          az login --service-principal \
+            --username "$AZ_CLIENT_ID" \
+            --password "$AZ_CLIENT_SECRET" \
+            --tenant "$AZ_TENANT_ID"
+            
+          az account set --subscription "$AZ_SUBSCRIPTION_ID"
 
           
       - name: Deploy to Azure Web App
@@ -91,3 +91,4 @@ jobs:
 
       - name: Restart Web App (Finalize Deployment)
         run: az webapp restart --name "$AZURE_WEBAPP_NAME" --resource-group "$AZURE_RG"
+
