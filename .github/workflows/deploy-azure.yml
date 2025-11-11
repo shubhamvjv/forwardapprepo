@@ -35,18 +35,16 @@ jobs:
         run: yarn install --frozen-lockfile
 
       - name: Build Next.js
-        env:
-          NODE_OPTIONS: --no-node-snapshot
         run: yarn build
 
       - name: Export (static) if applicable
-        if: false # set to true if you use "next export"
+        if: false
         run: yarn next export
 
       - name: Archive for Deploy
-        # Creates app.tar.gz containing the necessary files
+        # FIX HERE: Added node_modules to the list of archived files!
         run: |
-          tar -czf app.tar.gz .next package.json yarn.lock next.config.js public
+          tar -czf app.tar.gz .next node_modules package.json yarn.lock next.config.js public
       
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -59,7 +57,6 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     env:
-      # Secrets are exposed as environment variables for the 'az login' step
       AZ_CLIENT_ID: ${{ secrets.AZ_CLIENT_ID }}
       AZ_CLIENT_SECRET: ${{ secrets.AZ_CLIENT_SECRET }}
       AZ_SUBSCRIPTION_ID: ${{ secrets.AZ_SUBSCRIPTION_ID }}
@@ -75,11 +72,9 @@ jobs:
           path: .
 
       - name: Unpack Artifact
-        # Unpacks contents into the current working directory
         run: tar -xzf app.tar.gz
 
       - name: Azure CLI Login
-        # Log in using the Service Principal secrets
         run: |
           az login --service-principal \
             --username "$AZ_CLIENT_ID" \
@@ -91,7 +86,6 @@ jobs:
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          # FIX: Deploy the current directory ('.') which now holds all the unpacked files.
           package: . 
           slot-name: production 
 
