@@ -1,7 +1,7 @@
 import './globals.css';
 
 export const metadata = {
-title: "forwardapp",
+title: "forwardapppp",
 description: "Generated with Backstage Next.js template"
 };
 
@@ -11,4 +11,5 @@ return (
 <body>{children}</body>
 </html>
 );
+
 }
